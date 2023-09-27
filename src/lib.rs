@@ -13,6 +13,7 @@ struct State {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
+    clear_color: wgpu::Color,
     // The window must be declared after the surface so
     // it gets dropped after it as the surface contains
     // unsafe references to the window's resources.
@@ -79,8 +80,11 @@ impl State {
         };
         surface.configure(&device, &config);
 
+        let clear_color = wgpu::Color{ r: 0.1, g: 0.2, b: 0.3, a: 1.0 };
+
         Self {
             window,
+            clear_color,
             surface,
             device,
             queue,
@@ -103,6 +107,18 @@ impl State {
     }
 
     fn input(&mut self, event: &WindowEvent) -> bool {
+        match event {
+            WindowEvent::CursorMoved { device_id: _, position, modifiers: _ } => {
+                self.clear_color = wgpu::Color{ 
+                    r: self.clear_color.r, 
+                    g: position.y / self.config.height as f64, 
+                    b: position.x / self.config.width as f64, 
+                    a: self.clear_color.a };
+                return true;
+            }
+            _ => {}
+        }
+
         false
     }
 
@@ -125,7 +141,7 @@ impl State {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations { load: wgpu::LoadOp::Clear(
-                        wgpu::Color { r: 0.1, g: 0.2, b: 0.3, a: 1.0 }
+                        self.clear_color
                     ), store: true }
                 })],
                 depth_stencil_attachment: None,
