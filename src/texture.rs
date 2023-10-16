@@ -51,7 +51,7 @@ impl Texture {
         );
 
         Self { texture, view, sampler }
-     }
+    } 
 
     pub fn from_bytes(
         device: &wgpu::Device,
