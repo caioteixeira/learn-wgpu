@@ -1,6 +1,6 @@
 use camera_controler::{CameraController, Camera};
 use wgpu::util::DeviceExt;
-use model::{Vertex, ModelVertex, Model, DrawModel};
+use model::{Vertex, Model, DrawModel};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -17,12 +17,6 @@ mod texture;
 mod camera_controler;
 mod model;
 mod resources;
-
-const INDICES: &[u16] = &[
-    0, 1, 4,
-    1, 2, 4,
-    2, 3, 4,
-];
 
 struct Instance {
     position: cgmath::Vector3<f32>,
@@ -81,7 +75,6 @@ impl InstanceRaw {
 }
 
 const NUM_INSTANCES_PER_ROW: u32 = 10;
-const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(NUM_INSTANCES_PER_ROW as f32 * 0.5, 0.0, NUM_INSTANCES_PER_ROW as f32 * 0.5);
 
 // We need this for Rust to store our data correctly for the shaders
 #[repr(C)]
@@ -95,7 +88,6 @@ struct CameraUniform {
 
 impl CameraUniform {
     fn new() -> Self {
-        use cgmath::SquareMatrix;
         Self {
             view_proj: cgmath::Matrix4::identity().into(),
         }
@@ -124,8 +116,6 @@ struct State {
 
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
-
-    diffuse_bind_group: wgpu::BindGroup,
 
     depth_texture: texture::Texture,
 
@@ -195,10 +185,6 @@ impl State {
             view_formats: vec![],
         };
         surface.configure(&device, &config);
-
-        // Load texture
-        let diffuse_bytes = include_bytes!("happy-tree.png");
-        let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
         
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -224,23 +210,6 @@ impl State {
                 ],
                 label: Some("texture_bind_group_layout"),
             });
-
-            let diffuse_bind_group = device.create_bind_group(
-                &wgpu::BindGroupDescriptor {
-                    layout: &texture_bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                        }
-                    ],
-                    label: Some("diffuse_bind_group"),
-                }
-            );
 
         let clear_color = wgpu::Color{ r: 0.1, g: 0.2, b: 0.3, a: 1.0 };
 
@@ -409,7 +378,6 @@ impl State {
             size,
             render_pipeline,
             obj_model,
-            diffuse_bind_group,
             depth_texture,
             instances,
             camera,
